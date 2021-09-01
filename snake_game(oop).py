@@ -52,6 +52,7 @@ class Snake:
 			self.head_y = self.body[0][1]
 
 	def out_of_screen_movement(self):
+		"""Controls the snake's movement when it goes off screen"""
 		for body in self.body:
 			if body[1] < 20:
 				body[1] = 500
@@ -106,6 +107,8 @@ class Snake:
 		new_body = [self.body[-1][0] - (self.body[-1][2]), self.body[-1][1] - (self.body[-1][3]), self.body[-1][2], self.body[-1][3]]
 		self.body.append(new_body)
 
+snake = Snake()
+
 
 class Snake_food:
 	"""The food class"""
@@ -120,10 +123,16 @@ class Snake_food:
 		pygame.draw.rect(win, self.colour, (self.x_pos, self.y_pos, self.width, self.width))
 
 	def spawn(self):
-		if self.eaten:
-			self.x_pos = random.randrange(0, 400, 10)
-			self.y_pos = random.randrange(20, 500, 10)
-			self.eaten =  False
+		for body in snake.body:
+			if self.eaten:
+				self.x_pos = random.randrange(0, 400, 10)
+				self.y_pos = random.randrange(20, 500, 10)
+				# This is to prevent the food from spawning on the snake's body 
+				if self.x_pos != body[0] and self.y_pos != body[1]:
+					self.eaten =  False
+				else:
+					self.spawn()
+
 
 run =  True
 game_lost = False
@@ -131,7 +140,6 @@ text = pygame.font.SysFont("Helvetica", 18)
 score = 0
 highscore = ""
 new_highscore = False
-snake = Snake()
 food  = Snake_food()
 
 def load_high_score():
@@ -143,6 +151,7 @@ def load_high_score():
 			json.dump(score, highscore_file)
 
 def restart_game():
+	"""Restores important data to their initial values"""
 	global game_lost, new_highscore, score
 	score = 0
 	snake.vel_x = 10
@@ -204,6 +213,7 @@ while run:
 	snake.check_for_collision_with_body()
 	food.draw()
 	food.spawn()
+
 	if snake.head_y == food.y_pos and snake.head_x == food.x_pos:
 		food.eaten = True
 		snake.grow_body()
