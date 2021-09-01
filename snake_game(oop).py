@@ -26,7 +26,7 @@ class Snake:
 
 	def draw_body(self):
 		for body in self.body:
-			pygame.draw.rect(win, (255, 255, 0), (body[0], body[1], self.width, self.width))
+			pygame.draw.rect(win, (0, 255, 0), (body[0], body[1], self.width, self.width))
 
 	def move_body(self):
 		if not game_lost:
@@ -50,6 +50,17 @@ class Snake:
 
 			self.head_x = self.body[0][0]
 			self.head_y = self.body[0][1]
+
+	def out_of_screen_movement(self):
+		for body in self.body:
+			if body[1] < 20:
+				body[1] = 500
+			if body[1] > 500:
+				body[1] = 20
+			if body[0] > 400:
+				body[0] = 0
+			if body[0] < 0:
+				body[0] = 400
 
 	def check_movement_direction(self):
 		"""controls the movement of the snake"""
@@ -101,7 +112,7 @@ class Snake_food:
 	def __init__(self):
 		self.width = 10
 		self.x_pos = random.randrange(0, 400, 10)
-		self.y_pos = random.randrange(0, 500, 10)
+		self.y_pos = random.randrange(20, 500, 10)
 		self.eaten = False
 		self.colour  = (255, 0, 0)
 
@@ -111,7 +122,7 @@ class Snake_food:
 	def spawn(self):
 		if self.eaten:
 			self.x_pos = random.randrange(0, 400, 10)
-			self.y_pos = random.randrange(10, 500, 10)
+			self.y_pos = random.randrange(20, 500, 10)
 			self.eaten =  False
 
 run =  True
@@ -119,6 +130,7 @@ game_lost = False
 text = pygame.font.SysFont("Helvetica", 18)
 score = 0
 highscore = ""
+new_highscore = False
 snake = Snake()
 food  = Snake_food()
 
@@ -126,6 +138,27 @@ def load_high_score():
 	global highscore
 	with open("highscore.json") as highscore_file:
 		highscore = json.load(highscore_file)
+	if new_highscore:
+		with open("highscore.json", "w") as highscore_file:
+			json.dump(score, highscore_file)
+
+def restart_game():
+	global game_lost, new_highscore, score
+	score = 0
+	snake.vel_x = 10
+	snake.vel_y = 0
+	snake.body_turns = []
+	snake.body = [[20, 20, snake.vel_x, snake.vel_y]]
+	game_lost = False
+	new_highscore = False
+
+def display_game_over_msg():
+	pygame.draw.rect(win, (255, 255, 255), (100, 50, 230, 150))
+	pygame.draw.rect(win, (0, 0, 255), (100, 50, 230, 30))
+	win.blit(text.render("GAME OVER!", False, (255, 0, 0)), (150, 55))
+	win.blit(text.render("Press SPACE to play again", True, (0, 255, 0)), (130, 100))
+	if new_highscore:
+		win.blit(text.render("NEW HIGH SCORE: " + str(score), True, (255, 0, 0)), (130, 155))
 
 while run:
 	pygame.time.delay(100)
@@ -155,12 +188,18 @@ while run:
 					snake.vel_x = 0
 					snake.vel_y  = 10
 					snake.save_turning_point()
+			if game_lost:
+				if event.key == pygame.K_SPACE:
+					restart_game()
 
 	load_high_score()
-	win.fill((0, 0, 0))
+	win.fill((0, 150, 0))
+	pygame.draw.rect(win, (100, 100, 100), (0, 0, 400, 20))
 	win.blit(text.render("SCORE: " + str(score), True, (0, 255, 0)), (320, 0))
+	win.blit(text.render("HIGH SCORE: " + str(highscore), True, (0, 255, 0)), (5, 0))
 	snake.draw_body()
 	snake.move_body()
+	snake.out_of_screen_movement()
 	snake.check_movement_direction()
 	snake.check_for_collision_with_body()
 	food.draw()
@@ -171,10 +210,9 @@ while run:
 		score += 1
 
 	if game_lost:
+		display_game_over_msg()
 		if score > highscore:
-			print("New Highscore" + str(score))
-			with open("highscore.json", "w") as highscore_file:
-				json.dump(score, highscore_file)
-
+			new_highscore = True
+		
 	pygame.display.update()
 pygame.quit()
